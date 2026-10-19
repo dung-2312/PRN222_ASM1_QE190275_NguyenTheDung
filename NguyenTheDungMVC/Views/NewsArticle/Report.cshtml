@@ -1,0 +1,236 @@
+﻿@model NguyenTheDungMVC.Models.ViewModels.ReportViewModel
+@{
+    ViewData["Title"] = "Báo cáo & Thống kê Tin tức";
+    int totalCount = Model.Articles.Count;
+    var byCategory = Model.Articles
+        .GroupBy(a => a.Category?.CategoryName ?? "Chưa phân loại")
+        .Select(g => new { Name = g.Key, Count = g.Count() })
+        .OrderByDescending(x => x.Count)
+        .ToList();
+
+    var byAuthor = Model.Articles
+        .GroupBy(a => a.CreatedBy?.AccountName ?? "Không xác định")
+        .Select(g => new { Name = g.Key, Count = g.Count() })
+        .OrderByDescending(x => x.Count)
+        .ToList();
+}
+
+<div class="page-hero d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+    <div>
+        <span class="badge bg-white bg-opacity-25 text-white mb-2 px-3 py-1 rounded-pill">
+            <i class="bi bi-graph-up-arrow me-1"></i>Phân tích &amp; Thống kê Quản trị
+        </span>
+        <h3 class="fw-bold mb-1">Báo cáo Thống kê Xuất bản Tin tức</h3>
+        <p class="text-white-50 mb-0 small">Thống kê bài viết theo khoảng thời gian từ Từ ngày đến Đến ngày (Sắp xếp giảm dần theo ngày đăng)</p>
+    </div>
+    <div>
+        <a asp-action="ExportReportCsv"
+           asp-route-startDate="@(Model.StartDate?.ToString("yyyy-MM-dd"))"
+           asp-route-endDate="@(Model.EndDate?.ToString("yyyy-MM-dd"))"
+           class="btn btn-light text-primary fw-bold shadow-sm px-4">
+            <i class="bi bi-file-earmark-spreadsheet-fill me-2"></i>Xuất Báo cáo CSV (Excel)
+        </a>
+    </div>
+</div>
+
+<!-- Date Range Filter + Quick Presets -->
+<div class="search-box-pro mb-4">
+    <form asp-action="Report" method="get" id="reportFilterForm" class="row g-3 align-items-end">
+        <div class="col-md-4">
+            <label class="form-label fw-semibold small text-uppercase text-secondary">Từ ngày (Start Date)</label>
+            <input type="date" id="startDateInput" name="startDate" value="@(Model.StartDate?.ToString("yyyy-MM-dd"))" class="form-control" />
+        </div>
+        <div class="col-md-4">
+            <label class="form-label fw-semibold small text-uppercase text-secondary">Đến ngày (End Date)</label>
+            <input type="date" id="endDateInput" name="endDate" value="@(Model.EndDate?.ToString("yyyy-MM-dd"))" class="form-control" />
+        </div>
+        <div class="col-md-4 d-flex gap-2">
+            <button type="submit" class="btn btn-primary w-100">
+                <i class="bi bi-bar-chart-steps me-1"></i>Lập Báo cáo
+            </button>
+            <a asp-action="Report" class="btn btn-light border">Đặt lại</a>
+        </div>
+        <div class="col-12 pt-1 d-flex flex-wrap align-items-center gap-2">
+            <span class="small text-muted fw-semibold me-1"><i class="bi bi-lightning-charge me-1"></i>Chọn nhanh:</span>
+            <button type="button" class="btn btn-sm btn-light border py-1 px-3" onclick="setQuickRange(7)">7 ngày qua</button>
+            <button type="button" class="btn btn-sm btn-light border py-1 px-3" onclick="setQuickRange(30)">30 ngày qua</button>
+            <button type="button" class="btn btn-sm btn-light border py-1 px-3" onclick="setYearRange(2024)">Năm 2024</button>
+            <button type="button" class="btn btn-sm btn-light border py-1 px-3" onclick="clearRange()">Toàn thời gian</button>
+        </div>
+    </form>
+</div>
+
+<!-- KPI Summary Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="stat-card stat-card-primary d-flex justify-content-between align-items-center">
+            <div>
+                <div class="small text-uppercase text-white-50 fw-semibold">Tổng số Bài viết</div>
+                <div class="display-6 fw-bold">@Model.Articles.Count</div>
+            </div>
+            <i class="bi bi-journals fs-1 opacity-50"></i>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="stat-card stat-card-success d-flex justify-content-between align-items-center">
+            <div>
+                <div class="small text-uppercase text-white-50 fw-semibold">Bài viết Đang hiển thị</div>
+                <div class="display-6 fw-bold">@Model.Articles.Count(a => a.NewsStatus == true)</div>
+            </div>
+            <i class="bi bi-check2-circle fs-1 opacity-50"></i>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="stat-card stat-card-slate d-flex justify-content-between align-items-center">
+            <div>
+                <div class="small text-uppercase text-white-50 fw-semibold">Bài viết Tạm ẩn</div>
+                <div class="display-6 fw-bold">@Model.Articles.Count(a => a.NewsStatus != true)</div>
+            </div>
+            <i class="bi bi-eye-slash fs-1 opacity-50"></i>
+        </div>
+    </div>
+</div>
+
+<!-- Breakdown Charts by Category & Author -->
+@if (totalCount > 0)
+{
+    <div class="row g-4 mb-4">
+        <div class="col-md-6">
+            <div class="card-pro p-4 h-100">
+                <h6 class="fw-bold text-uppercase small text-secondary mb-3">
+                    <i class="bi bi-pie-chart-fill text-primary me-2"></i>Tỷ trọng theo Chuyên mục
+                </h6>
+                @foreach (var cat in byCategory)
+                {
+                    int pct = (int)Math.Round((double)cat.Count * 100 / totalCount);
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between small fw-semibold mb-1">
+                            <span>@cat.Name</span>
+                            <span class="text-primary">@cat.Count bài (@pct%)</span>
+                        </div>
+                        <div class="progress" style="height: 8px; border-radius: 999px;">
+                            <div class="progress-bar bg-primary" role="progressbar" style="width: @pct%"></div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card-pro p-4 h-100">
+                <h6 class="fw-bold text-uppercase small text-secondary mb-3">
+                    <i class="bi bi-person-lines-fill text-info me-2"></i>Đóng góp theo Tác giả
+                </h6>
+                @foreach (var author in byAuthor)
+                {
+                    int pct = (int)Math.Round((double)author.Count * 100 / totalCount);
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between small fw-semibold mb-1">
+                            <span>@author.Name</span>
+                            <span class="text-info">@author.Count bài (@pct%)</span>
+                        </div>
+                        <div class="progress" style="height: 8px; border-radius: 999px;">
+                            <div class="progress-bar bg-info" role="progressbar" style="width: @pct%"></div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Report Table -->
+<div class="card-pro overflow-hidden">
+    <div class="table-responsive">
+        <table class="table table-pro">
+            <thead>
+                <tr>
+                    <th>Mã Bài</th>
+                    <th>Ngày đăng (Giảm dần) <i class="bi bi-sort-down ms-1 text-primary"></i></th>
+                    <th>Tiêu đề Bài viết</th>
+                    <th>Chuyên mục</th>
+                    <th>Tác giả</th>
+                    <th>Trạng thái</th>
+                    <th class="text-end">Chi tiết</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (!Model.Articles.Any())
+                {
+                    <tr>
+                        <td colspan="7" class="text-center py-5 text-muted">
+                            <i class="bi bi-calendar2-x fs-2 d-block mb-2"></i>
+                            Không có bài viết nào trong khoảng thời gian đã chọn.
+                        </td>
+                    </tr>
+                }
+                @foreach (var item in Model.Articles)
+                {
+                    bool hasDistinctHeadline = !string.IsNullOrWhiteSpace(item.Headline) &&
+                                               !string.Equals(item.NewsTitle?.Trim(), item.Headline.Trim(), StringComparison.OrdinalIgnoreCase);
+                    <tr>
+                        <td class="fw-bold text-secondary">#@item.NewsArticleId</td>
+                        <td>
+                            <span class="badge-soft badge-soft-info">
+                                <i class="bi bi-calendar-event"></i>@(item.CreatedDate?.ToString("dd/MM/yyyy HH:mm") ?? "")
+                            </span>
+                        </td>
+                        <td style="max-width: 340px;">
+                            <div class="fw-bold text-dark text-truncate">@item.NewsTitle</div>
+                            @if (hasDistinctHeadline)
+                            {
+                                <div class="small text-muted text-truncate">@item.Headline</div>
+                            }
+                        </td>
+                        <td><span class="badge-soft badge-soft-primary">@(item.Category?.CategoryName ?? "")</span></td>
+                        <td class="fw-semibold text-secondary small">@(item.CreatedBy?.AccountName ?? "")</td>
+                        <td>
+                            @if (item.NewsStatus == true)
+                            {
+                                <span class="badge-soft badge-soft-success">
+                                    <span class="status-dot status-dot-active"></span>Hiển thị
+                                </span>
+                            }
+                            else
+                            {
+                                <span class="badge-soft badge-soft-secondary">
+                                    <span class="status-dot status-dot-inactive"></span>Tạm ẩn
+                                </span>
+                            }
+                        </td>
+                        <td class="text-end">
+                            <a asp-action="Details" asp-route-id="@item.NewsArticleId" class="btn btn-light border btn-action-icon text-primary" title="Xem chi tiết">
+                                <i class="bi bi-arrow-up-right"></i>
+                            </a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function formatDate(d) {
+            return d.toISOString().split('T')[0];
+        }
+        function setQuickRange(days) {
+            const end = new Date();
+            const start = new Date();
+            start.setDate(end.getDate() - days);
+            document.getElementById('startDateInput').value = formatDate(start);
+            document.getElementById('endDateInput').value = formatDate(end);
+            document.getElementById('reportFilterForm').submit();
+        }
+        function setYearRange(year) {
+            document.getElementById('startDateInput').value = year + '-01-01';
+            document.getElementById('endDateInput').value = year + '-12-31';
+            document.getElementById('reportFilterForm').submit();
+        }
+        function clearRange() {
+            document.getElementById('startDateInput').value = '';
+            document.getElementById('endDateInput').value = '';
+            document.getElementById('reportFilterForm').submit();
+        }
+    </script>
+}

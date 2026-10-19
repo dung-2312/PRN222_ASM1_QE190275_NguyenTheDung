@@ -1,0 +1,108 @@
+﻿@model IEnumerable<FUNewsManagement_BusinessObjects.Entities.NewsArticle>
+@{
+    ViewData["Title"] = "Lịch sử Bài đăng";
+}
+
+<div class="page-hero d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+    <div>
+        <span class="badge bg-white bg-opacity-25 text-white mb-2 px-3 py-1 rounded-pill">
+            <i class="bi bi-clock-history me-1"></i>Nhật ký Biên tập Cá nhân
+        </span>
+        <h3 class="fw-bold mb-1">Lịch sử Bài viết Đã đăng</h3>
+        <p class="text-white-50 mb-0 small">Danh sách tất cả các bài báo do tài khoản của bạn khởi tạo</p>
+    </div>
+    <div>
+        <a asp-action="Manage" class="btn btn-light text-primary fw-bold shadow-sm px-4">
+            <i class="bi bi-journal-richtext me-2"></i>Quản lý Bài viết
+        </a>
+    </div>
+</div>
+
+<!-- Search Form -->
+<div class="search-box-pro mb-4">
+    <form asp-action="History" method="get" class="row g-2 align-items-center">
+        <div class="col-md-9">
+            <div class="input-group">
+                <span class="input-group-text bg-white border-end-0 text-muted pe-2"><i class="bi bi-search"></i></span>
+                <input type="text" name="searchTerm" value="@ViewBag.SearchTerm" class="form-control border-start-0 ps-1" placeholder="Tìm kiếm trong các bài bạn đã đăng theo tiêu đề hoặc tóm tắt..." />
+            </div>
+        </div>
+        <div class="col-md-3 d-flex gap-2">
+            <button type="submit" class="btn btn-primary w-100"><i class="bi bi-search me-1"></i>Tìm kiếm</button>
+            <a asp-action="History" class="btn btn-light border">Đặt lại</a>
+        </div>
+    </form>
+</div>
+
+<div class="card-pro overflow-hidden">
+    <div class="table-responsive">
+        <table class="table table-pro">
+            <thead>
+                <tr>
+                    <th>Mã Bài</th>
+                    <th>Bài viết</th>
+                    <th>Danh mục</th>
+                    <th>Nhãn (Tags)</th>
+                    <th>Ngày đăng</th>
+                    <th>Cập nhật cuối</th>
+                    <th>Trạng thái</th>
+                    <th class="text-end">Xem</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (!Model.Any())
+                {
+                    <tr>
+                        <td colspan="8" class="text-center py-5 text-muted">
+                            <i class="bi bi-journal-bookmark fs-2 d-block mb-2"></i>
+                            Bạn chưa có bài viết nào phù hợp với từ khóa tìm kiếm.
+                        </td>
+                    </tr>
+                }
+                @foreach (var item in Model)
+                {
+                    bool hasDistinctHeadline = !string.IsNullOrWhiteSpace(item.Headline) &&
+                                               !string.Equals(item.NewsTitle?.Trim(), item.Headline.Trim(), StringComparison.OrdinalIgnoreCase);
+                    <tr>
+                        <td class="fw-bold text-secondary">#@item.NewsArticleId</td>
+                        <td style="max-width: 320px;">
+                            <div class="fw-bold text-dark text-truncate">@item.NewsTitle</div>
+                            @if (hasDistinctHeadline)
+                            {
+                                <div class="small text-muted text-truncate">@item.Headline</div>
+                            }
+                        </td>
+                        <td><span class="badge-soft badge-soft-primary">@(item.Category?.CategoryName ?? "")</span></td>
+                        <td>
+                            @foreach (var tag in item.Tags)
+                            {
+                                <span class="badge bg-light text-secondary border rounded-pill me-1">#@tag.TagName</span>
+                            }
+                        </td>
+                        <td class="small text-secondary">@(item.CreatedDate?.ToString("dd/MM/yyyy HH:mm") ?? "")</td>
+                        <td class="small text-secondary">@(item.ModifiedDate?.ToString("dd/MM/yyyy HH:mm") ?? "")</td>
+                        <td>
+                            @if (item.NewsStatus == true)
+                            {
+                                <span class="badge-soft badge-soft-success">
+                                    <span class="status-dot status-dot-active"></span>Hiển thị
+                                </span>
+                            }
+                            else
+                            {
+                                <span class="badge-soft badge-soft-secondary">
+                                    <span class="status-dot status-dot-inactive"></span>Tạm ẩn
+                                </span>
+                            }
+                        </td>
+                        <td class="text-end">
+                            <a asp-action="Details" asp-route-id="@item.NewsArticleId" class="btn btn-light border btn-action-icon text-primary" title="Xem bài viết">
+                                <i class="bi bi-arrow-up-right"></i>
+                            </a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

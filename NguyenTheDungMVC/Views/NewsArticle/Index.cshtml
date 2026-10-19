@@ -1,0 +1,122 @@
+﻿@model IEnumerable<FUNewsManagement_BusinessObjects.Entities.NewsArticle>
+@using FUNewsManagement_BusinessObjects.Entities
+@{
+    ViewData["Title"] = "Bản tin Đại học FPT";
+    var categories = ViewBag.Categories as List<Category> ?? new List<Category>();
+    short? selectedCategoryId = ViewBag.SelectedCategoryId;
+}
+
+<!-- Hero Section -->
+<div class="page-hero mb-4">
+    <div class="row align-items-center">
+        <div class="col-lg-8">
+            <span class="badge bg-white bg-opacity-25 text-white mb-2 px-3 py-1 rounded-pill">
+                <i class="bi bi-broadcast me-1"></i>Bản tin Trực tuyến Toàn trường
+            </span>
+            <h2 class="fw-bold mb-2">Tin tức &amp; Sự kiện Đại học FPT</h2>
+            <p class="text-white-50 mb-0">Cập nhật nhanh nhất các thông báo học thuật, công trình nghiên cứu khoa học và hoạt động sinh viên nổi bật.</p>
+        </div>
+    </div>
+</div>
+
+<!-- Search & Category Filter Pills -->
+<div class="search-box-pro mb-4">
+    <form asp-action="Index" method="get" class="row g-2 align-items-center">
+        <div class="col-md-6">
+            <div class="input-group">
+                <span class="input-group-text bg-white border-end-0 text-muted pe-2"><i class="bi bi-search"></i></span>
+                <input type="text" name="searchTerm" value="@ViewBag.SearchTerm" class="form-control border-start-0 ps-1" placeholder="Tìm kiếm bài viết theo tiêu đề, tóm tắt, nội dung hoặc #nhãn..." />
+            </div>
+        </div>
+        <div class="col-md-3">
+            <select name="categoryId" class="form-select">
+                <option value="">Tất cả Chuyên mục</option>
+                @foreach (var cat in categories)
+                {
+                    if (selectedCategoryId == cat.CategoryId)
+                    {
+                        <option value="@cat.CategoryId" selected>@cat.CategoryName</option>
+                    }
+                    else
+                    {
+                        <option value="@cat.CategoryId">@cat.CategoryName</option>
+                    }
+                }
+            </select>
+        </div>
+        <div class="col-md-3 d-flex gap-2">
+            <button type="submit" class="btn btn-primary w-100"><i class="bi bi-search me-1"></i>Tìm kiếm</button>
+            <a asp-action="Index" class="btn btn-light border">Đặt lại</a>
+        </div>
+    </form>
+</div>
+
+@if (!Model.Any())
+{
+    <div class="card-pro p-5 text-center text-muted">
+        <i class="bi bi-journal-x fs-1 d-block mb-2 text-secondary"></i>
+        <h5 class="fw-bold text-dark">Không tìm thấy bài viết nào</h5>
+        <p class="small mb-0">Vui lòng thử lại với từ khóa khác hoặc chọn chuyên mục khác.</p>
+    </div>
+}
+else
+{
+    <div class="row g-4">
+        @foreach (var item in Model)
+        {
+            bool hasDistinctHeadline = !string.IsNullOrWhiteSpace(item.Headline) &&
+                                       !string.Equals(item.NewsTitle?.Trim(), item.Headline.Trim(), StringComparison.OrdinalIgnoreCase);
+            <div class="col-md-6">
+                <div class="card-pro card-pro-hover h-100 p-4 d-flex flex-column position-relative">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <span class="badge-soft badge-soft-primary">
+                            <i class="bi bi-bookmark-star-fill"></i>@(item.Category?.CategoryName ?? "Tin chung")
+                        </span>
+                        <span class="text-muted small">
+                            <i class="bi bi-calendar3 me-1"></i>@(item.CreatedDate?.ToString("dd/MM/yyyy") ?? "")
+                        </span>
+                    </div>
+
+                    <h5 class="fw-bold mb-2" style="line-height: 1.4;">
+                        <a asp-action="Details" asp-route-id="@item.NewsArticleId" class="text-decoration-none text-dark stretched-link">
+                            @(string.IsNullOrWhiteSpace(item.NewsTitle) ? item.Headline : item.NewsTitle)
+                        </a>
+                    </h5>
+
+                    @if (hasDistinctHeadline)
+                    {
+                        <p class="text-primary fw-semibold small mb-2">@item.Headline</p>
+                    }
+
+                    <p class="text-secondary small flex-grow-1 mb-3" style="line-height: 1.65;">
+                        @(item.NewsContent != null && item.NewsContent.Length > 190
+                            ? item.NewsContent.Substring(0, 190) + "..."
+                            : item.NewsContent)
+                    </p>
+
+                    @if (item.Tags.Any())
+                    {
+                        <div class="d-flex flex-wrap gap-1 mb-3 position-relative" style="z-index: 2;">
+                            @foreach (var tag in item.Tags)
+                            {
+                                <span class="badge bg-light text-secondary border rounded-pill px-2 py-1">#@tag.TagName</span>
+                            }
+                        </div>
+                    }
+
+                    <div class="d-flex justify-content-between align-items-center pt-3 border-top mt-auto">
+                        <div class="d-flex align-items-center gap-2">
+                            <div class="avatar-circle" style="width: 28px; height: 28px; font-size: 0.75rem;">
+                                @( !string.IsNullOrWhiteSpace(item.CreatedBy?.AccountName) ? item.CreatedBy.AccountName.Split(' ', StringSplitOptions.RemoveEmptyEntries).Last()[0].ToString().ToUpper() : "B" )
+                            </div>
+                            <span class="small fw-semibold text-secondary">@(item.CreatedBy?.AccountName ?? "Ban Biên tập")</span>
+                        </div>
+                        <span class="text-primary fw-semibold small">
+                            Xem chi tiết <i class="bi bi-arrow-right ms-1"></i>
+                        </span>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}

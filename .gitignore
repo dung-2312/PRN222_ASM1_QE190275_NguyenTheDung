@@ -1,0 +1,14 @@
+.vs/
+**/bin/
+**/obj/
+**/Debug/
+**/Release/
+**/TestResults/
+.vscode/
+.idea/
+*.user
+*.suo
+*.cache
+.env
+.env.*
+!.env.example

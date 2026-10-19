@@ -1,0 +1,240 @@
+﻿@model IEnumerable<FUNewsManagement_BusinessObjects.Entities.SystemAccount>
+@using System.Text.Encodings.Web
+@{
+    ViewData["Title"] = "Quản lý Tài khoản";
+    int staffRole = ViewBag.StaffRole ?? 1;
+    int lecturerRole = ViewBag.LecturerRole ?? 2;
+}
+
+<div class="page-hero d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+    <div>
+        <span class="badge bg-white bg-opacity-25 text-white mb-2 px-3 py-1 rounded-pill">
+            <i class="bi bi-shield-lock me-1"></i>Phân hệ Quản trị viên
+        </span>
+        <h3 class="fw-bold mb-1">Quản lý Tài khoản Hệ thống</h3>
+        <p class="text-white-50 mb-0 small">Quản lý thông tin và phân quyền cho tài khoản Nhân viên (Staff) và Giảng viên (Lecturer)</p>
+    </div>
+    <div>
+        <button type="button" class="btn btn-light text-primary fw-bold shadow-sm px-4" data-bs-toggle="modal" data-bs-target="#createAccountModal">
+            <i class="bi bi-person-plus-fill me-2"></i>Thêm Tài khoản Mới
+        </button>
+    </div>
+</div>
+
+<!-- Search Bar -->
+<div class="search-box-pro mb-4">
+    <form asp-action="Index" method="get" class="row g-2 align-items-center">
+        <div class="col-md-9">
+            <div class="input-group">
+                <span class="input-group-text bg-white border-end-0 text-muted pe-2"><i class="bi bi-search"></i></span>
+                <input type="text" name="searchTerm" value="@ViewBag.SearchTerm" class="form-control border-start-0 ps-1" placeholder="Tìm kiếm tài khoản theo họ tên hoặc địa chỉ email..." />
+            </div>
+        </div>
+        <div class="col-md-3 d-flex gap-2">
+            <button type="submit" class="btn btn-primary w-100"><i class="bi bi-search me-1"></i>Tìm kiếm</button>
+            <a asp-action="Index" class="btn btn-light border">Đặt lại</a>
+        </div>
+    </form>
+</div>
+
+<!-- Accounts Table -->
+<div class="card-pro overflow-hidden">
+    <div class="table-responsive">
+        <table class="table table-pro">
+            <thead>
+                <tr>
+                    <th>Mã TK</th>
+                    <th>Họ và Tên</th>
+                    <th>Địa chỉ Email</th>
+                    <th>Vai trò</th>
+                    <th class="text-end">Thao tác</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (!Model.Any())
+                {
+                    <tr>
+                        <td colspan="5" class="text-center py-5 text-muted">
+                            <i class="bi bi-inbox fs-2 d-block mb-2"></i>
+                            Không tìm thấy tài khoản nào phù hợp.
+                        </td>
+                    </tr>
+                }
+                @foreach (var item in Model)
+                {
+                    string initials = !string.IsNullOrWhiteSpace(item.AccountName)
+                        ? string.Concat(item.AccountName.Split(' ', StringSplitOptions.RemoveEmptyEntries).TakeLast(2).Select(s => char.ToUpper(s[0])))
+                        : "U";
+                    <tr>
+                        <td class="fw-bold text-secondary">#@item.AccountId</td>
+                        <td>
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="avatar-circle">@initials</div>
+                                <div class="fw-semibold text-dark">@item.AccountName</div>
+                            </div>
+                        </td>
+                        <td class="text-secondary">@item.AccountEmail</td>
+                        <td>
+                            @if (item.AccountRole == staffRole)
+                            {
+                                <span class="badge-soft badge-soft-success">
+                                    <span class="status-dot status-dot-active"></span>Nhân viên (Staff)
+                                </span>
+                            }
+                            else if (item.AccountRole == lecturerRole)
+                            {
+                                <span class="badge-soft badge-soft-info">
+                                    <i class="bi bi-mortarboard"></i>Giảng viên (Lecturer)
+                                </span>
+                            }
+                            else
+                            {
+                                <span class="badge-soft badge-soft-secondary">Vai trò @item.AccountRole</span>
+                            }
+                        </td>
+                        <td class="text-end">
+                            <button type="button" class="btn btn-light border btn-action-icon text-primary me-1" title="Chỉnh sửa"
+                                    onclick="openEditAccountModal(@item.AccountId, '@Html.Raw(JavaScriptEncoder.Default.Encode(item.AccountName ?? ""))', '@Html.Raw(JavaScriptEncoder.Default.Encode(item.AccountEmail ?? ""))', @(item.AccountRole ?? staffRole), '@Html.Raw(JavaScriptEncoder.Default.Encode(item.AccountPassword ?? ""))')">
+                                <i class="bi bi-pencil-square"></i>
+                            </button>
+                            <button type="button" class="btn btn-light border btn-action-icon text-danger" title="Xóa tài khoản"
+                                    onclick="openDeleteAccountModal(@item.AccountId, '@Html.Raw(JavaScriptEncoder.Default.Encode(item.AccountName ?? ""))')">
+                                <i class="bi bi-trash3"></i>
+                            </button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- CREATE ACCOUNT POPUP MODAL -->
+<div class="modal fade" id="createAccountModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form asp-action="Create" method="post">
+                @Html.AntiForgeryToken()
+                <div class="modal-header modal-header-pro">
+                    <h5 class="modal-title fw-bold"><i class="bi bi-person-plus me-2"></i>Tạo Tài khoản Mới</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small text-uppercase text-secondary">Mã Tài khoản (ID)</label>
+                        <input type="number" name="AccountId" value="@ViewBag.NextAccountId" class="form-control" required min="1" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small text-uppercase text-secondary">Họ và Tên</label>
+                        <input type="text" name="AccountName" class="form-control" placeholder="Nhập họ và tên đầy đủ" required maxlength="100" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small text-uppercase text-secondary">Địa chỉ Email</label>
+                        <input type="email" name="AccountEmail" class="form-control" placeholder="tenban@gmail.com" required maxlength="70" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small text-uppercase text-secondary">Vai trò Hệ thống</label>
+                        <select name="AccountRole" class="form-select" required>
+                            <option value="@staffRole">Nhân viên (Staff - Role 1)</option>
+                            <option value="@lecturerRole">Giảng viên (Lecturer - Role 2)</option>
+                        </select>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label fw-semibold small text-uppercase text-secondary">Mật khẩu</label>
+                        <input type="password" name="AccountPassword" class="form-control" placeholder="Nhập mật khẩu" required maxlength="70" />
+                    </div>
+                </div>
+                <div class="modal-footer bg-light border-0">
+                    <button type="button" class="btn btn-light border" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-primary px-4">Lưu Tài khoản</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- EDIT ACCOUNT POPUP MODAL -->
+<div class="modal fade" id="editAccountModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form asp-action="Edit" method="post">
+                @Html.AntiForgeryToken()
+                <div class="modal-header modal-header-pro">
+                    <h5 class="modal-title fw-bold"><i class="bi bi-pencil-square me-2"></i>Cập nhật Tài khoản</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small text-uppercase text-secondary">Mã Tài khoản (ID)</label>
+                        <input type="number" id="edit_AccountId" name="AccountId" class="form-control bg-light" readonly />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small text-uppercase text-secondary">Họ và Tên</label>
+                        <input type="text" id="edit_AccountName" name="AccountName" class="form-control" required maxlength="100" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small text-uppercase text-secondary">Địa chỉ Email</label>
+                        <input type="email" id="edit_AccountEmail" name="AccountEmail" class="form-control" required maxlength="70" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small text-uppercase text-secondary">Vai trò Hệ thống</label>
+                        <select id="edit_AccountRole" name="AccountRole" class="form-select" required>
+                            <option value="@staffRole">Nhân viên (Staff - Role 1)</option>
+                            <option value="@lecturerRole">Giảng viên (Lecturer - Role 2)</option>
+                        </select>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label fw-semibold small text-uppercase text-secondary">Mật khẩu</label>
+                        <input type="password" id="edit_AccountPassword" name="AccountPassword" class="form-control" required maxlength="70" />
+                    </div>
+                </div>
+                <div class="modal-footer bg-light border-0">
+                    <button type="button" class="btn btn-light border" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-primary px-4">Lưu Thay đổi</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- DELETE CONFIRMATION MODAL -->
+<div class="modal fade" id="deleteAccountModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form asp-action="Delete" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" id="delete_AccountId" name="accountId" />
+                <div class="modal-header modal-header-danger">
+                    <h5 class="modal-title fw-bold"><i class="bi bi-exclamation-triangle me-2"></i>Xác nhận Xóa Tài khoản</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <p class="mb-0">Bạn có chắc chắn muốn xóa tài khoản <strong id="delete_AccountName" class="text-danger"></strong> khỏi hệ thống?</p>
+                </div>
+                <div class="modal-footer bg-light border-0">
+                    <button type="button" class="btn btn-light border" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-danger px-4">Xác nhận Xóa</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function openEditAccountModal(id, name, email, role, password) {
+            document.getElementById('edit_AccountId').value = id;
+            document.getElementById('edit_AccountName').value = name;
+            document.getElementById('edit_AccountEmail').value = email;
+            document.getElementById('edit_AccountRole').value = role;
+            document.getElementById('edit_AccountPassword').value = password;
+            new bootstrap.Modal(document.getElementById('editAccountModal')).show();
+        }
+
+        function openDeleteAccountModal(id, name) {
+            document.getElementById('delete_AccountId').value = id;
+            document.getElementById('delete_AccountName').innerText = name + ' (#' + id + ')';
+            new bootstrap.Modal(document.getElementById('deleteAccountModal')).show();
+        }
+    </script>
+}

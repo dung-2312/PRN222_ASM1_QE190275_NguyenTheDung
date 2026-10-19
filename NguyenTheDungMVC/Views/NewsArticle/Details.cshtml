@@ -1,0 +1,91 @@
+﻿@model FUNewsManagement_BusinessObjects.Entities.NewsArticle
+@{
+    ViewData["Title"] = Model.NewsTitle;
+    bool hasDistinctHeadline = !string.IsNullOrWhiteSpace(Model.Headline) &&
+                               !string.Equals(Model.NewsTitle?.Trim(), Model.Headline.Trim(), StringComparison.OrdinalIgnoreCase);
+}
+
+<div class="row justify-content-center">
+    <div class="col-lg-9">
+        <div class="mb-3">
+            <a href="javascript:history.back()" class="btn btn-light border btn-sm px-3">
+                <i class="bi bi-arrow-left me-1"></i>Quay lại Danh sách
+            </a>
+        </div>
+
+        <article class="card-pro p-4 p-md-5">
+            <div class="d-flex flex-wrap gap-2 align-items-center mb-3">
+                <span class="badge-soft badge-soft-primary">
+                    <i class="bi bi-folder2-open"></i>@(Model.Category?.CategoryName ?? "Chưa phân loại")
+                </span>
+                @if (Model.NewsStatus == true)
+                {
+                    <span class="badge-soft badge-soft-success">
+                        <span class="status-dot status-dot-active"></span>Đang hiển thị
+                    </span>
+                }
+                else
+                {
+                    <span class="badge-soft badge-soft-secondary">
+                        <span class="status-dot status-dot-inactive"></span>Bản nháp / Tạm ẩn
+                    </span>
+                }
+                <span class="text-muted small ms-auto">
+                    <i class="bi bi-calendar3 me-1"></i>Ngày đăng: @(Model.CreatedDate?.ToString("dd/MM/yyyy HH:mm") ?? "")
+                </span>
+            </div>
+
+            <h1 class="fw-bold mb-3" style="font-size: 1.85rem; line-height: 1.35;">@(string.IsNullOrWhiteSpace(Model.NewsTitle) ? Model.Headline : Model.NewsTitle)</h1>
+            @if (hasDistinctHeadline)
+            {
+                <p class="fs-5 text-secondary fw-medium mb-4">@Model.Headline</p>
+            }
+
+            <div class="d-flex flex-wrap align-items-center gap-4 p-3 rounded-3 bg-light mb-4 small text-secondary">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="avatar-circle" style="width: 32px; height: 32px; font-size: 0.8rem;">
+                        @(!string.IsNullOrWhiteSpace(Model.CreatedBy?.AccountName) ? Model.CreatedBy.AccountName.Split(' ', StringSplitOptions.RemoveEmptyEntries).Last()[0].ToString().ToUpper() : "B")
+                    </div>
+                    <div>
+                        <div class="text-muted" style="font-size: 0.72rem;">TÁC GIẢ ĐĂNG BÀI</div>
+                        <div class="fw-bold text-dark">@(Model.CreatedBy?.AccountName ?? "Hệ thống")</div>
+                    </div>
+                </div>
+                @if (ViewBag.UpdatedByName != null)
+                {
+                    <div>
+                        <div class="text-muted" style="font-size: 0.72rem;">NGƯỜI CẬP NHẬT CUỐI</div>
+                        <div class="fw-semibold text-dark">@ViewBag.UpdatedByName</div>
+                    </div>
+                }
+                @if (!string.IsNullOrWhiteSpace(Model.NewsSource))
+                {
+                    <div>
+                        <div class="text-muted" style="font-size: 0.72rem;">NGUỒN TIN</div>
+                        <div class="fw-semibold text-dark">@Model.NewsSource</div>
+                    </div>
+                }
+                @if (Model.ModifiedDate.HasValue)
+                {
+                    <div class="ms-md-auto">
+                        <div class="text-muted" style="font-size: 0.72rem;">CẬP NHẬT LẦN CUỐI</div>
+                        <div class="fw-semibold text-dark">@Model.ModifiedDate.Value.ToString("dd/MM/yyyy HH:mm")</div>
+                    </div>
+                }
+            </div>
+
+            <div class="mb-4 text-dark" style="white-space: pre-line; line-height: 1.85; font-size: 1.04rem;">@Model.NewsContent</div>
+
+            @if (Model.Tags.Any())
+            {
+                <div class="pt-4 border-top d-flex flex-wrap align-items-center gap-2">
+                    <span class="small fw-bold text-uppercase text-muted me-1"><i class="bi bi-tags me-1"></i>Chủ đề:</span>
+                    @foreach (var tag in Model.Tags)
+                    {
+                        <span class="badge-soft badge-soft-info" title="@tag.Note">#@tag.TagName</span>
+                    }
+                </div>
+            }
+        </article>
+    </div>
+</div>

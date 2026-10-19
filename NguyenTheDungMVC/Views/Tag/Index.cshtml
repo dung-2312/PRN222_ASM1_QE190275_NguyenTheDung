@@ -1,0 +1,204 @@
+﻿@model IEnumerable<FUNewsManagement_BusinessObjects.Entities.Tag>
+@using System.Text.Encodings.Web
+@{
+    ViewData["Title"] = "Quản lý Nhãn (Tags)";
+}
+
+<div class="page-hero d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+    <div>
+        <span class="badge bg-white bg-opacity-25 text-white mb-2 px-3 py-1 rounded-pill">
+            <i class="bi bi-tags-fill me-1"></i>Phân loại Chủ đề
+        </span>
+        <h3 class="fw-bold mb-1">Quản lý Nhãn &amp; Từ khóa (Tags)</h3>
+        <p class="text-white-50 mb-0 small">Quản lý danh sách nhãn gắn cho bài viết (Nhãn đang được sử dụng sẽ được bảo vệ khỏi thao tác xóa)</p>
+    </div>
+    <div>
+        <button type="button" class="btn btn-light text-primary fw-bold shadow-sm px-4" data-bs-toggle="modal" data-bs-target="#createTagModal">
+            <i class="bi bi-plus-circle-fill me-2"></i>Thêm Nhãn Mới
+        </button>
+    </div>
+</div>
+
+<!-- Search Form -->
+<div class="search-box-pro mb-4">
+    <form asp-action="Index" method="get" class="row g-2 align-items-center">
+        <div class="col-md-9">
+            <div class="input-group">
+                <span class="input-group-text bg-white border-end-0 text-muted pe-2"><i class="bi bi-search"></i></span>
+                <input type="text" name="searchTerm" value="@ViewBag.SearchTerm" class="form-control border-start-0 ps-1" placeholder="Tìm kiếm nhãn theo tên hoặc ghi chú..." />
+            </div>
+        </div>
+        <div class="col-md-3 d-flex gap-2">
+            <button type="submit" class="btn btn-primary w-100"><i class="bi bi-search me-1"></i>Tìm kiếm</button>
+            <a asp-action="Index" class="btn btn-light border">Đặt lại</a>
+        </div>
+    </form>
+</div>
+
+<!-- Tags Table -->
+<div class="card-pro overflow-hidden">
+    <div class="table-responsive">
+        <table class="table table-pro">
+            <thead>
+                <tr>
+                    <th>Mã Nhãn</th>
+                    <th>Tên Nhãn (Tag)</th>
+                    <th>Ghi chú / Mô tả</th>
+                    <th>Số bài viết gắn nhãn</th>
+                    <th class="text-end">Thao tác</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (!Model.Any())
+                {
+                    <tr>
+                        <td colspan="5" class="text-center py-5 text-muted">
+                            <i class="bi bi-tags fs-2 d-block mb-2"></i>
+                            Không tìm thấy nhãn nào phù hợp.
+                        </td>
+                    </tr>
+                }
+                @foreach (var item in Model)
+                {
+                    <tr>
+                        <td class="fw-bold text-secondary">#@item.TagId</td>
+                        <td>
+                            <span class="badge-soft badge-soft-primary fs-6">
+                                <i class="bi bi-hash"></i>@item.TagName
+                            </span>
+                        </td>
+                        <td class="text-secondary">@(string.IsNullOrWhiteSpace(item.Note) ? "—" : item.Note)</td>
+                        <td>
+                            <span class="badge-soft badge-soft-info">@item.NewsArticles.Count bài viết</span>
+                        </td>
+                        <td class="text-end text-nowrap">
+                            <button type="button" class="btn btn-light border btn-action-icon text-primary me-1" title="Chỉnh sửa"
+                                    onclick="openEditTagModal(@item.TagId, '@Html.Raw(JavaScriptEncoder.Default.Encode(item.TagName ?? ""))', '@Html.Raw(JavaScriptEncoder.Default.Encode(item.Note ?? ""))')">
+                                <i class="bi bi-pencil-square"></i>
+                            </button>
+                            <button type="button" class="btn btn-light border btn-action-icon text-danger" title="Xóa nhãn"
+                                    onclick="openDeleteTagModal(@item.TagId, '@Html.Raw(JavaScriptEncoder.Default.Encode(item.TagName ?? ""))', @item.NewsArticles.Count)">
+                                <i class="bi bi-trash3"></i>
+                            </button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- CREATE TAG POPUP MODAL -->
+<div class="modal fade" id="createTagModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form asp-action="Create" method="post">
+                @Html.AntiForgeryToken()
+                <div class="modal-header modal-header-pro">
+                    <h5 class="modal-title fw-bold"><i class="bi bi-tag-fill me-2"></i>Thêm Nhãn Mới</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small text-uppercase text-secondary">Mã Nhãn (Tag ID)</label>
+                        <input type="number" name="TagId" value="@ViewBag.NextTagId" class="form-control" required min="1" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small text-uppercase text-secondary">Tên Nhãn</label>
+                        <input type="text" name="TagName" class="form-control" placeholder="Ví dụ: Trí tuệ nhân tạo" required maxlength="50" />
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label fw-semibold small text-uppercase text-secondary">Ghi chú</label>
+                        <textarea name="Note" class="form-control" rows="3" placeholder="Nhập ghi chú cho nhãn này..." maxlength="400"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light border-0">
+                    <button type="button" class="btn btn-light border" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-primary px-4">Lưu Nhãn</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- EDIT TAG POPUP MODAL -->
+<div class="modal fade" id="editTagModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form asp-action="Edit" method="post">
+                @Html.AntiForgeryToken()
+                <div class="modal-header modal-header-pro">
+                    <h5 class="modal-title fw-bold"><i class="bi bi-pencil-square me-2"></i>Cập nhật Nhãn</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small text-uppercase text-secondary">Mã Nhãn (Tag ID)</label>
+                        <input type="number" id="edit_TagId" name="TagId" class="form-control bg-light" readonly />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small text-uppercase text-secondary">Tên Nhãn</label>
+                        <input type="text" id="edit_TagName" name="TagName" class="form-control" required maxlength="50" />
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label fw-semibold small text-uppercase text-secondary">Ghi chú</label>
+                        <textarea id="edit_Note" name="Note" class="form-control" rows="3" maxlength="400"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light border-0">
+                    <button type="button" class="btn btn-light border" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-primary px-4">Lưu Thay đổi</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- DELETE TAG CONFIRMATION MODAL -->
+<div class="modal fade" id="deleteTagModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form asp-action="Delete" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" id="delete_TagId" name="tagId" />
+                <div class="modal-header modal-header-danger">
+                    <h5 class="modal-title fw-bold"><i class="bi bi-exclamation-triangle me-2"></i>Xác nhận Xóa Nhãn</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <p class="mb-2">Bạn có chắc chắn muốn xóa nhãn <strong id="delete_TagName" class="text-danger"></strong>?</p>
+                    <div id="delete_TagWarning" class="alert alert-warning border-0 rounded-3 small d-none mb-0">
+                        <i class="bi bi-shield-exclamation me-1"></i>Nhãn này đang được gắn vào bài viết nên hệ thống sẽ chặn thao tác xóa.
+                    </div>
+                </div>
+                <div class="modal-footer bg-light border-0">
+                    <button type="button" class="btn btn-light border" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-danger px-4">Xác nhận Xóa</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function openEditTagModal(id, name, note) {
+            document.getElementById('edit_TagId').value = id;
+            document.getElementById('edit_TagName').value = name;
+            document.getElementById('edit_Note').value = note;
+            new bootstrap.Modal(document.getElementById('editTagModal')).show();
+        }
+
+        function openDeleteTagModal(id, name, articleCount) {
+            document.getElementById('delete_TagId').value = id;
+            document.getElementById('delete_TagName').innerText = '#' + name + ' (ID: ' + id + ')';
+            const warningEl = document.getElementById('delete_TagWarning');
+            if (articleCount > 0) {
+                warningEl.classList.remove('d-none');
+            } else {
+                warningEl.classList.add('d-none');
+            }
+            new bootstrap.Modal(document.getElementById('deleteTagModal')).show();
+        }
+    </script>
+}

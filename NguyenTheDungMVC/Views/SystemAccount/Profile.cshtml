@@ -1,0 +1,92 @@
+﻿@model FUNewsManagement_BusinessObjects.Entities.SystemAccount
+@{
+    ViewData["Title"] = "Hồ sơ Cá nhân";
+    string initials = !string.IsNullOrWhiteSpace(Model.AccountName)
+        ? string.Concat(Model.AccountName.Split(' ', StringSplitOptions.RemoveEmptyEntries).TakeLast(2).Select(s => char.ToUpper(s[0])))
+        : "NV";
+}
+
+<div class="row justify-content-center">
+    <div class="col-lg-7">
+        <div class="page-hero d-flex align-items-center justify-content-between">
+            <div class="d-flex align-items-center gap-3">
+                <div class="rounded-4 bg-white text-primary fw-bold d-flex align-items-center justify-content-center shadow" style="width: 64px; height: 64px; font-size: 1.5rem;">
+                    @initials
+                </div>
+                <div>
+                    <span class="badge bg-white bg-opacity-25 text-white rounded-pill mb-1">Tài khoản Nhân viên (Staff)</span>
+                    <h4 class="fw-bold mb-0">@Model.AccountName</h4>
+                    <div class="text-white-50 small">@Model.AccountEmail</div>
+                </div>
+            </div>
+            <button type="button" class="btn btn-light text-primary fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#editProfileModal">
+                <i class="bi bi-pencil-square me-1"></i>Chỉnh sửa Hồ sơ
+            </button>
+        </div>
+
+        <div class="card-pro p-4">
+            <h6 class="text-uppercase text-muted fw-bold small mb-3">Thông tin Tài khoản</h6>
+            <div class="row g-3">
+                <div class="col-sm-6">
+                    <div class="p-3 rounded-3 bg-light">
+                        <div class="text-muted small">Mã Tài khoản</div>
+                        <div class="fw-bold fs-5">#@Model.AccountId</div>
+                    </div>
+                </div>
+                <div class="col-sm-6">
+                    <div class="p-3 rounded-3 bg-light">
+                        <div class="text-muted small">Tổng số bài báo đã đăng</div>
+                        <div class="fw-bold fs-5">@Model.NewsArticles.Count bài viết</div>
+                    </div>
+                </div>
+                <div class="col-sm-6">
+                    <div class="p-3 rounded-3 bg-light">
+                        <div class="text-muted small">Họ và Tên</div>
+                        <div class="fw-semibold">@Model.AccountName</div>
+                    </div>
+                </div>
+                <div class="col-sm-6">
+                    <div class="p-3 rounded-3 bg-light">
+                        <div class="text-muted small">Địa chỉ Email</div>
+                        <div class="fw-semibold">@Model.AccountEmail</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- EDIT PROFILE POPUP MODAL -->
+<div class="modal fade" id="editProfileModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form asp-action="UpdateProfile" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="AccountId" value="@Model.AccountId" />
+                <input type="hidden" name="AccountRole" value="@ViewBag.StaffRole" />
+                <div class="modal-header modal-header-pro">
+                    <h5 class="modal-title fw-bold"><i class="bi bi-person-gear me-2"></i>Cập nhật Hồ sơ Cá nhân</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small text-uppercase text-secondary">Họ và Tên</label>
+                        <input type="text" name="AccountName" value="@Model.AccountName" class="form-control" required maxlength="100" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small text-uppercase text-secondary">Địa chỉ Email</label>
+                        <input type="email" name="AccountEmail" value="@Model.AccountEmail" class="form-control" required maxlength="70" />
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label fw-semibold small text-uppercase text-secondary">Mật khẩu</label>
+                        <input type="password" name="AccountPassword" value="@Model.AccountPassword" class="form-control" required maxlength="70" />
+                    </div>
+                </div>
+                <div class="modal-footer bg-light border-0">
+                    <button type="button" class="btn btn-light border" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-primary px-4">Lưu Thay đổi</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
